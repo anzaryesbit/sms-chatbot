@@ -59,6 +59,7 @@ def get_user_response(dict_list, event):
     print(bodies)
     return [str(bodies[0]), int(bodies[2]), str(bodies[1]), str(bodies[3])]
 
+#message response, dictates what message will return to the statement
 def message_response(body):
     if body.upper() == "HELLO":
        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" \
@@ -85,8 +86,8 @@ def persist_to_db(data):
     
     try:
         logger.info("Looking up credentials to DB")
-        #secrets = json.loads(get_secret())
         logger.info("Connecting to DB")
+        # configuration if using amazon secrets
         # conn = pymysql.connect(host=secrets["host"], # URL or hostname of the database in Oregon  
         #                        user=secrets["username"],
         #                        password=secrets["password"],
@@ -94,9 +95,9 @@ def persist_to_db(data):
         #                        connect_timeout=5
         #                        )
         conn = pymysql.connect(host='chatbot-response.cxpevijcux2x.us-east-1.rds.amazonaws.com',
-                               user='admin',
-                               password='FxUIMZYmCRYJvnJtj7fL',
-                               database='chatbot',
+                               user=#input user name,
+                               password=# input password,
+                               database=#input database name,
                                connect_timeout=5
                                )
         logger.info("Creating cursor to DB")
@@ -104,7 +105,7 @@ def persist_to_db(data):
         # Create a new record
         sql = "INSERT INTO `Messages` (phone,`feedback-type`, address, feedback) VALUES (%s, %s, %s, %s)"
         logger.info("Executing query to DB")
-        cur.execute(sql, ['8052152660', 3, 'dkraker@calpoly.edu', data])
+        cur.execute(sql, [data[from], 3, '*', data])
             # connection is not autocommit by default. So you must commit to save
         # your changes
         
@@ -138,64 +139,21 @@ def lambda_handler(event, context):
             message = message_response("*")
     else:
         logger.info("In else block")
-
-        #secrets = json.loads(get_secret())
-        # this will try to make a connection to a database in AWS
-        #try:
-        #    mydb = pymysql.pymysql.connect(host='chatbot-response.cxpevijcux2x.us-east-1.rds.amazonaws.com',
-        #                         user='admin',
-        #                         password='FxUIMZYmCRYJvnJtj7fL',
-        #                         database='chatbot',
-        #                         cursorclass=pymysql.pymysql.cursors.DictCursor)
-              #host='chatbot-response.cxpevijcux2x.us-east-1.rds.amazonaws.com', #secrets["host"], # URL or hostname of the database in Oregon  
-              #user='admin',   #secrets["username"], hard coded for now bc i can't figure out the config file
-              #password='FxUIMZYmCRYJvnJtj7fL', #secrets["password"],
-              #database='chatbot') #secrets["dbname"])
-        #    print("Success: "+str(mydb))
-        # if an error occurs it will print out the problem    
-        #except:
-        #    print("Something went wrong")
         
-        #get the user data
-        URL = 'https://api.twilio.com/2010-04-01/Accounts/ACde65dd6e75b69cc834a01902dac38e2d/Messages.json'
-        username = 'ACde65dd6e75b69cc834a01902dac38e2d'
-        password = '3adbc420c929086c525eed81e9db4672'
+        #get the user data from twilio's API
+        URL = 'https://api.twilio.com/2010-04-01/Accounts/[Account ID]/Messages.json'
+        username = #[Account ID]
+        password = #[Password from Twilio]
         json_data = get_json(URL, username, password)
         received_msgs = extract_received(json_data)
         # tuple_row = ('from', 'option', 'address', 'message body')
         tuple_row = get_user_response(received_msgs, event)
         # print(tuple_row)
-        
-        #push into sql
-        # connection = pymysql.pymysql.connect(host='chatbot-response.cxpevijcux2x.us-east-1.rds.amazonaws.com',
-        #                          user='admin',
-        #                          password='FxUIMZYmCRYJvnJtj7fL',
-        #                          database='chatbot',
-        #                          port=3306,
-        #                          cursorclass=pymysql.pymysql.cursors.DictCursor)
-        # with connection:
-        #     with connection.cursor() as cursor:
-        #         # Create a new record
-        #         sql = "INSERT INTO `Messages` (phone,`feedback-type`, address, feedback) VALUES (%s, %s, %s, %s)" 
-        #         cursor.execute(sql, tuple_row)
-        # # connection is not autocommit by default. So you must commit to save
-        # # your changes
-        # connection.ping()
-        # connection.commit()
-        # print("inserted in sql table")
         message = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"\
            "<Response><Message><Body>Thank you for your feedback</Body></Message></Response>"
     return message
     
-    
-    # the below does the same thing as above, but has the advantage of having all the previous responses in a list
-    # can be used for future implementation
-    #print(received_msg[0])
-    
-    # below code is if you want to message "Hello World" back, good to know if you want to send something back
-    # return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" \
-    #       "<Response><Message><Body>Hello world! -Lambda</Body></Message></Response>"
-    
+   
     
     '''
     current issues:
